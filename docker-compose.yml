@@ -3,7 +3,6 @@ version: "3.8"
 services:
   triage-workbench:
     image: ghcr.io/niightgamez/scam-triage-workbench:latest
-    container_name: scam-triage-workbench
     restart: unless-stopped
 
     # Strictly bind to 127.0.0.1 (never expose directly on 0.0.0.0)
