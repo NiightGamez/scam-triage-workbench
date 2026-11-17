@@ -153,6 +153,10 @@ def test_serve_frontend_index(client):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Scam & Phishing" in response.text
+    assert "← ~/mvoorhies" in response.text
+    assert "[home]" in response.text
+    assert "[portfolio]" in response.text
+    assert "[homelab]" in response.text
 
 
 # ------------------ Security Hardening Tests ------------------
