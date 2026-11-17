@@ -2,15 +2,13 @@ version: "3.8"
 
 services:
   triage-workbench:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: scam-triage-workbench
     restart: unless-stopped
 
     # Strictly bind to 127.0.0.1 (never expose directly on 0.0.0.0)
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${PORT:-8000}:8000"
 
     # Defense-in-depth container hardening
     read_only: true
@@ -31,7 +29,7 @@ services:
           cpus: "0.5"
           memory: 256M
 
-    # Default to DEMO_MODE_ONLY=true for secure-by-default public deployment
+    # Configurable environment with safe defaults (does not require a local .env file)
     environment:
-      - DEMO_MODE_ONLY=true
-      - RATE_LIMIT_PER_MINUTE=10
+      - DEMO_MODE_ONLY=${DEMO_MODE_ONLY:-true}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-10}
