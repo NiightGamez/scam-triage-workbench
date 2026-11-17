@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scam & Phishing Infrastructure Triage Workbench</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#151e2e',
+              925: '#0b111e',
+              950: '#060a12',
+            }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for terminal cards */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b111e; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Navigation / Header -->
+  <header class="border-b border-slate-800/80 bg-slate-925/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono text-lg font-bold shadow-sm shadow-emerald-500/20">
+          🛡️
+        </div>
+        <div>
+          <span class="text-xs uppercase tracking-widest font-mono text-emerald-400 font-semibold block leading-tight">Passive OSINT Security Workbench</span>
+          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            Scam & Phishing Triage
+            <span class="text-[10px] bg-slate-800 text-slate-400 font-mono px-1.5 py-0.5 rounded border border-slate-700">v1.0</span>
+          </h1>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2 text-xs font-mono">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          100% Passive
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/60">
+          🔒 SSRF Guard Active
+        </span>
+        <span id="mode-badge" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+          Checking status...
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Hero / Target Input Section -->
+    <section class="bg-gradient-to-b from-slate-900/90 to-slate-925/90 border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div class="max-w-3xl space-y-4">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          Inspect Suspicious Infrastructure Safely
+        </h2>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Deconstructs targets, resolves DNS with <code class="text-emerald-400 font-mono">dnspython</code>, queries public RDAP registration, discovers subdomains via Certificate Transparency (<code class="text-emerald-400 font-mono">crt.sh</code>), and enriches ASNs without ever transmitting a packet to the suspicious host.
+        </p>
+
+        <!-- Search Input Form -->
+        <form id="triage-form" class="pt-2">
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-grow">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-mono text-sm">
+                &gt;
+              </div>
+              <input
+                id="target-input"
+                type="text"
+                required
+                placeholder="Enter URL, domain, or IP (e.g. hxxps://chase-secure-verify[.]top/auth)"
+                class="w-full pl-8 pr-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition shadow-inner"
+              />
+            </div>
+            <button
+              id="submit-btn"
+              type="submit"
+              class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono text-sm rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              <span id="btn-spinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+              <span id="btn-text">Run Triage</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Sample Case Pills -->
+        <div class="pt-2 flex flex-wrap items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono font-medium mr-1">Demo Cases:</span>
+          <button
+            onclick="loadSample('bank_phish')"
+            class="sample-pill text-xs font-mono px-3 py-1.5 rounded-lg bg-rose-950/40 text-rose-300 border border-rose-800/60 hover:bg-rose-900/40 hover:border-rose-700 transition flex items-center gap-1.5"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Case 1: Bank Credential Harvest
+          </button>
+          <button
+            onclick="loadSample('crypto_drainer')"
+            class="sample-pill text-xs font-mono px-3 py-1.5 rounded-lg bg-orange-950/40 text-orange-300 border border-orange-800/60 hover:bg-orange-900/40 hover:border-orange-700 transition flex items-center gap-1.5"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+            Case 2: Crypto Wallet Drainer
+          </button>
+          <button
+            onclick="loadSample('benign_baseline')"
+            class="sample-pill text-xs font-mono px-3 py-1.5 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900/40 hover:border-emerald-700 transition flex items-center gap-1.5"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Case 3: Benign Baseline
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error / SSRF Alert Banner -->
+    <div id="error-banner" class="hidden rounded-xl border p-4 font-mono text-sm">
+      <div class="flex items-start gap-3">
+        <span id="error-icon" class="text-lg">🚨</span>
+        <div class="flex-grow space-y-1">
+          <h4 id="error-title" class="font-bold">Error Notice</h4>
+          <p id="error-desc" class="text-xs leading-relaxed opacity-90"></p>
+        </div>
+        <button onclick="dismissError()" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+    </div>
+
+    <!-- Results Dashboard (Hidden by default until search or sample clicked) -->
+    <div id="results-dashboard" class="hidden space-y-6">
+
+      <!-- Executive Header Card -->
+      <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="badge-type" class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+                DOMAIN
+              </span>
+              <span id="header-timestamp" class="text-xs font-mono text-slate-500">
+                2026-11-16T20:00:00Z
+              </span>
+            </div>
+            <div>
+              <span class="text-xs font-mono text-slate-500 uppercase tracking-wider block">Investigated Target (Defanged)</span>
+              <h3 id="header-defanged-target" class="text-xl sm:text-2xl font-mono font-bold text-white break-all">
+                hxxps://example[.]com
+              </h3>
+            </div>
+            <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs font-mono text-slate-400">
+              <div>Host: <span id="header-host" class="text-slate-200">example.com</span></div>
+              <div>Domain: <span id="header-domain" class="text-slate-200">example.com</span></div>
+              <div id="header-port-container" class="hidden">Port: <span id="header-port" class="text-slate-200">443</span></div>
+            </div>
+          </div>
+
+          <!-- Risk Score Gauge / Badge -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div id="score-card" class="p-4 rounded-xl border flex items-center gap-4 min-w-[220px]">
+              <div id="score-circle" class="w-16 h-16 rounded-full flex flex-col items-center justify-center font-mono font-extrabold text-2xl border-2">
+                <span id="score-num">85</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Risk Assessment</span>
+                <span id="score-tier" class="text-base font-mono font-bold tracking-tight block">CRITICAL RISK</span>
+                <span id="score-points-sub" class="text-[11px] font-mono text-slate-500">Score: 85/100</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar: Export Buttons -->
+        <div class="mt-6 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="download-md-btn"
+              onclick="downloadMarkdownBrief()"
+              class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition flex items-center gap-2"
+            >
+              📄 Download Markdown Brief
+            </button>
+            <button
+              id="copy-iocs-btn"
+              onclick="copyDefangedIoCs()"
+              class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition flex items-center gap-2"
+            >
+              📋 Copy Defanged IoCs
+            </button>
+            <button
+              id="download-json-btn"
+              onclick="downloadJSONReport()"
+              class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition flex items-center gap-2"
+            >
+              💾 Export JSON
+            </button>
+          </div>
+          <div id="toast-msg" class="hidden text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-3 py-1.5 rounded-lg animate-fade">
+            Copied to clipboard!
+          </div>
+        </div>
+      </section>
+
+      <!-- Automated Heuristic Risk Flags Section -->
+      <section class="space-y-3">
+        <h3 class="text-sm font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+          🚨 Automated Heuristic Risk Flags (<span id="flags-count">0</span>)
+        </h3>
+        <div id="flags-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Flag cards injected via JavaScript -->
+        </div>
+      </section>
+
+      <!-- Infrastructure Breakdown Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- DNS Resolution Card -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
+          <h4 class="text-sm font-mono uppercase tracking-wider text-emerald-400 font-semibold flex items-center justify-between">
+            <span>🌐 Passive DNS Records</span>
+            <span id="dns-ttl-badge" class="text-xs text-slate-500 lowercase"></span>
+          </h4>
+
+          <!-- A / AAAA Records Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="pb-2">Type</th>
+                  <th class="pb-2">IP Address (Defanged)</th>
+                  <th class="pb-2 text-right">TTL</th>
+                </tr>
+              </thead>
+              <tbody id="dns-ips-body" class="divide-y divide-slate-800/50">
+                <!-- IP rows injected here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- MX and NS details -->
+          <div class="space-y-2 pt-2 border-t border-slate-800/80 text-xs font-mono">
+            <div>
+              <span class="text-slate-500 block">MX Records:</span>
+              <div id="dns-mx-list" class="text-slate-300">None detected</div>
+            </div>
+            <div>
+              <span class="text-slate-500 block">Nameservers:</span>
+              <div id="dns-ns-list" class="text-slate-300 break-words">None detected</div>
+            </div>
+          </div>
+
+          <!-- Email Security Authentication -->
+          <div class="pt-3 border-t border-slate-800/80 space-y-2">
+            <span class="text-xs font-mono text-slate-500 uppercase tracking-wider block">Email Authentication</span>
+            <div class="space-y-1.5 text-xs font-mono">
+              <div class="p-2.5 rounded bg-slate-950/70 border border-slate-800">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">SPF Record</span>
+                <span id="spf-record-val" class="text-slate-200 break-all">None</span>
+              </div>
+              <div class="p-2.5 rounded bg-slate-950/70 border border-slate-800">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">DMARC Record</span>
+                <span id="dmarc-record-val" class="text-slate-200 break-all">None</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Domain Registration & RDAP Card -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
+          <h4 class="text-sm font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center justify-between">
+            <span>📅 Domain Registration & RDAP</span>
+            <span class="text-xs text-slate-500 font-normal">rdap.org</span>
+          </h4>
+
+          <div class="grid grid-cols-2 gap-3 font-mono text-xs">
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+              <span class="text-[10px] uppercase text-slate-500 font-bold block">Domain Age</span>
+              <span id="rdap-age" class="text-base font-bold text-white">N/A</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+              <span class="text-[10px] uppercase text-slate-500 font-bold block">Days to Expiration</span>
+              <span id="rdap-expiry-days" class="text-base font-bold text-white">N/A</span>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 font-mono text-xs divide-y divide-slate-800/60">
+            <div class="pt-1 flex justify-between gap-4">
+              <span class="text-slate-500">Registrar:</span>
+              <span id="rdap-registrar" class="text-slate-200 text-right truncate">Unknown</span>
+            </div>
+            <div class="pt-2 flex justify-between gap-4">
+              <span class="text-slate-500">Created Date:</span>
+              <span id="rdap-created" class="text-slate-200 text-right">N/A</span>
+            </div>
+            <div class="pt-2 flex justify-between gap-4">
+              <span class="text-slate-500">Expiration Date:</span>
+              <span id="rdap-expires" class="text-slate-200 text-right">N/A</span>
+            </div>
+            <div class="pt-2 flex justify-between gap-4">
+              <span class="text-slate-500">Last Updated:</span>
+              <span id="rdap-updated" class="text-slate-200 text-right">N/A</span>
+            </div>
+          </div>
+
+          <!-- Domain Status Badges -->
+          <div class="pt-2">
+            <span class="text-[10px] uppercase font-mono text-slate-500 font-bold block mb-1.5">Status Codes</span>
+            <div id="rdap-status-tags" class="flex flex-wrap gap-1">
+              <!-- status tags injected here -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Public ASN & Hosting Provider Card -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
+          <h4 class="text-sm font-mono uppercase tracking-wider text-amber-400 font-semibold flex items-center justify-between">
+            <span>🏢 Hosting & Public ASN</span>
+            <span class="text-xs text-slate-500 font-normal">Team Cymru DNS</span>
+          </h4>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="pb-2">IP Address</th>
+                  <th class="pb-2">ASN</th>
+                  <th class="pb-2">Organization</th>
+                  <th class="pb-2 text-right">Country</th>
+                </tr>
+              </thead>
+              <tbody id="asn-table-body" class="divide-y divide-slate-800/50">
+                <!-- ASN rows injected here -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Certificate Transparency (crt.sh) Card -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-mono uppercase tracking-wider text-purple-400 font-semibold">
+              📜 Certificate Transparency
+            </h4>
+            <span id="ct-count-badge" class="px-2 py-0.5 rounded text-xs font-mono bg-purple-950/60 text-purple-300 border border-purple-800/60">
+              0 discovered
+            </span>
+          </div>
+
+          <div class="space-y-2">
+            <div class="relative">
+              <input
+                id="ct-search"
+                type="text"
+                placeholder="Filter discovered subdomains..."
+                oninput="filterSubdomains()"
+                class="w-full px-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-600 font-mono text-xs focus:outline-none focus:border-purple-500"
+              />
+            </div>
+            <div id="ct-subdomains-list" class="max-h-48 overflow-y-auto rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 space-y-1 font-mono text-xs text-slate-300">
+              <span class="text-slate-500">No subdomains discovered</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Footer Guardrail Statement -->
+      <footer class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/60 text-center font-mono text-xs text-slate-500 space-y-1">
+        <p>🔒 <strong>Passive OSINT Architecture:</strong> Queries public DNS, rdap.org, crt.sh, and Team Cymru mapping.</p>
+        <p>Strict SSRF protection active. Zero HTTP requests sent to target infrastructure.</p>
+      </footer>
+
+    </div>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test report outputs
+example_report.json
+example_report.md
+*report*.json
+*report*.md
+triage_*.json
+triage_*.md

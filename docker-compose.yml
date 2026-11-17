@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  triage-workbench:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scam-triage-workbench
+    restart: unless-stopped
+
+    # Strictly bind to 127.0.0.1 (never expose directly on 0.0.0.0)
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    # Defense-in-depth container hardening
+    read_only: true
+    tmpfs:
+      - "/tmp:size=32M,noexec,nosuid,nodev"
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    # Strict resource constraints
+    pids_limit: 64
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+    # Default to DEMO_MODE_ONLY=true for secure-by-default public deployment
+    environment:
+      - DEMO_MODE_ONLY=true
+      - RATE_LIMIT_PER_MINUTE=10
