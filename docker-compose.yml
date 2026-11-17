@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   triage-workbench:
-    build: .
+    image: ghcr.io/niightgamez/scam-triage-workbench:latest
     container_name: scam-triage-workbench
     restart: unless-stopped
 
