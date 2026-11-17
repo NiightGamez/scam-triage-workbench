@@ -98,15 +98,13 @@ Then visit **`http://127.0.0.1:8000`** in your browser.
 - **Copy Defanged IoCs**: Formats defanged target, host, IPs, and subdomains directly into your clipboard.
 - **Download Markdown Brief**: Generates and downloads a `.md` triage brief for ticket attachments.
 
-### Demo Mode (`DEMO_MODE_ONLY`)
-To host the web UI publicly without allowing arbitrary outbound network calls, launch with `DEMO_MODE_ONLY=true`:
+### Demo Mode & Sub-Path Hosting
+- **`DEMO_MODE_ONLY`**: To host the web UI publicly without allowing arbitrary outbound network calls, launch with `DEMO_MODE_ONLY=true`. Live triage queries to `/api/triage` return `HTTP 403 Forbidden`, while all 3 pre-loaded sample cases remain interactive with zero network calls.
+- **`ROOT_PATH`**: When reverse-proxying behind a sub-path (e.g. `https://domain.com/triage`), set `ROOT_PATH=/triage`. The app handles sub-path routing, trailing slash normalization, and relative asset resolution automatically.
 
 ```bash
-DEMO_MODE_ONLY=true uvicorn app:app --host 0.0.0.0 --port 8000
+DEMO_MODE_ONLY=true ROOT_PATH=/triage uvicorn app:app --host 0.0.0.0 --port 8000
 ```
-In Demo Mode:
-- Live triage queries to `/api/triage` return `HTTP 403 Forbidden`.
-- All 3 pre-loaded sample cases remain interactive with zero network calls.
 
 ---
 
@@ -202,7 +200,7 @@ python3 triage.py suspicious-bank.com -f all -o case_1042
 
 ## 🧪 Testing
 
-The workbench includes 46 automated tests covering defanging, SSRF protections, DNS parsing, RDAP parsing, CT discovery, ASN lookups, heuristic triggers, CLI operations, and FastAPI endpoints:
+The workbench includes 47 automated tests covering defanging, SSRF protections, DNS parsing, RDAP parsing, CT discovery, ASN lookups, heuristic triggers, CLI operations, and FastAPI endpoints:
 
 ```bash
 # Run complete test suite

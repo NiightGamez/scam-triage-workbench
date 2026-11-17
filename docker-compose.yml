@@ -33,3 +33,4 @@ services:
     environment:
       - DEMO_MODE_ONLY=${DEMO_MODE_ONLY:-true}
       - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-10}
+      - ROOT_PATH=${ROOT_PATH:-}

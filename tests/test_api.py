@@ -203,3 +203,36 @@ def test_input_validation_rejects_excessive_length(client):
     huge_url = "https://example.com/" + "a" * 2100
     response = client.post("/api/triage", json={"target": huge_url})
     assert response.status_code == 422
+
+
+# ------------------ Sub-Path (ROOT_PATH) Routing Tests ------------------
+
+def test_subpath_routing_and_trailing_slash_redirect(client, monkeypatch):
+    """Verify ROOT_PATH routing: redirect /subpath to /subpath/, serve index and API."""
+    import app as app_module
+    from fastapi.staticfiles import StaticFiles
+    monkeypatch.setattr(app_module, "ROOT_PATH", "/triage")
+
+    # Ensure /triage/static is mounted for subpath static file resolution
+    if not any(getattr(r, "path", None) == "/triage/static" for r in app_module.app.routes):
+        app_module.app.mount("/triage/static", StaticFiles(directory=app_module.STATIC_DIR), name="test_subpath_static")
+
+    # 1. Requesting /triage without trailing slash must redirect to /triage/
+    res_redirect = client.get("/triage", follow_redirects=False)
+    assert res_redirect.status_code == 307
+    assert res_redirect.headers["location"] == "/triage/"
+
+    # 2. Requesting /triage/ must serve the HTML frontend
+    res_index = client.get("/triage/")
+    assert res_index.status_code == 200
+    assert "text/html" in res_index.headers["content-type"]
+
+    # 3. Requesting /triage/api/health must route cleanly
+    res_api = client.get("/triage/api/health")
+    assert res_api.status_code == 200
+    assert res_api.json()["status"] == "ok"
+    assert res_api.json()["root_path"] == "/triage"
+
+    # 4. Requesting /triage/static/app.js must route to static files
+    res_static = client.get("/triage/static/app.js")
+    assert res_static.status_code == 200

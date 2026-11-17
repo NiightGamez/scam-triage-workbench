@@ -1,5 +1,10 @@
 // Scam & Phishing Infrastructure Triage Workbench Frontend Script
 
+// Ensure trailing slash on folder/subpath URLs so relative fetch() calls never 404
+if (!window.location.pathname.endsWith("/") && !window.location.pathname.includes(".")) {
+  window.location.replace(window.location.pathname + "/" + window.location.search);
+}
+
 let currentReport = null;
 let allSubdomains = [];
 
@@ -20,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function checkHealth() {
   try {
-    const res = await fetch("/api/health");
+    const res = await fetch("api/health");
     if (!res.ok) return;
     const data = await res.json();
     const badge = document.getElementById("mode-badge");
@@ -42,7 +47,7 @@ async function loadSample(sampleId) {
   dismissError();
   setLoading(true);
   try {
-    const res = await fetch(`/api/samples/${sampleId}`);
+    const res = await fetch(`api/samples/${sampleId}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || "Failed to load sample case");
@@ -61,7 +66,7 @@ async function executeTriage(target) {
   dismissError();
   setLoading(true);
   try {
-    const res = await fetch("/api/triage", {
+    const res = await fetch("api/triage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ target }),
@@ -347,7 +352,7 @@ function filterSubdomains() {
 async function downloadMarkdownBrief() {
   if (!currentReport) return;
   try {
-    const res = await fetch("/api/export/markdown", {
+    const res = await fetch("api/export/markdown", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(currentReport),

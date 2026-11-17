@@ -9,7 +9,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
@@ -24,14 +24,34 @@ from triage.reporter import to_markdown
 
 # Environment flags (defaults to true if running in Docker/prod environment)
 DEMO_MODE_ONLY = os.getenv("DEMO_MODE_ONLY", "false").lower() in ("true", "1", "yes")
+ROOT_PATH = os.getenv("ROOT_PATH", "").strip().rstrip("/")
 
 app = FastAPI(
     title="Scam & Phishing Infrastructure Triage Workbench",
     description="Passive OSINT infrastructure enrichment and heuristic risk scoring.",
     version=__version__,
+    root_path=ROOT_PATH,
 )
 
-# 1. Strict HTTP Security Response Headers Middleware
+# 1. Sub-Path and Trailing Slash Routing Middleware
+@app.middleware("http")
+async def handle_subpath_routing(request: Request, call_next):
+    """Support hosting under sub-paths (e.g. ROOT_PATH=/triage) and enforce trailing slashes."""
+    if ROOT_PATH:
+        path = request.url.path
+        # If client accesses /triage without trailing slash, redirect to /triage/
+        if path == ROOT_PATH:
+            return RedirectResponse(url=f"{ROOT_PATH}/", status_code=307)
+
+        # If reverse proxy forwards full path without stripping ROOT_PATH, rewrite ASGI scope path
+        if path.startswith(ROOT_PATH + "/") and not path.startswith(ROOT_PATH + "/static"):
+            sub_path = path[len(ROOT_PATH):]
+            request.scope["path"] = sub_path or "/"
+
+    return await call_next(request)
+
+
+# 2. Strict HTTP Security Response Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Enforce defense-in-depth HTTP security response headers."""
@@ -134,6 +154,7 @@ async def health():
         "status": "ok",
         "version": __version__,
         "demo_mode": DEMO_MODE_ONLY,
+        "root_path": ROOT_PATH,
     }
 
 
@@ -207,3 +228,5 @@ async def export_markdown(report: TriageReport):
 # Mount static assets directory
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    if ROOT_PATH:
+        app.mount(f"{ROOT_PATH}/static", StaticFiles(directory=STATIC_DIR), name="subpath_static")
