@@ -202,9 +202,18 @@ python3 triage.py suspicious-bank.com -f all -o case_1042
 
 ## 🧪 Testing
 
-The workbench includes 42 automated tests covering defanging, SSRF protections, DNS parsing, RDAP parsing, CT discovery, ASN lookups, heuristic triggers, CLI operations, and FastAPI endpoints:
+The workbench includes 46 automated tests covering defanging, SSRF protections, DNS parsing, RDAP parsing, CT discovery, ASN lookups, heuristic triggers, CLI operations, and FastAPI endpoints:
 
 ```bash
 # Run complete test suite
 pytest tests/ -v
 ```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 Michael Voorhies.
+
