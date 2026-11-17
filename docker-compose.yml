@@ -22,12 +22,12 @@ services:
       - ALL
 
     # Strict resource constraints
-    pids_limit: 64
     deploy:
       resources:
         limits:
           cpus: "0.5"
           memory: 256M
+          pids: 64
 
     # Configurable environment with safe defaults (does not require a local .env file)
     environment:
